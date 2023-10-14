@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14-alpine
+    ports:
+      - 5433:5432
+    container_name: db-user-template
+    environment:
+      POSTGRES_PASSWORD: usertemplate
+      POSTGRES_USER: usertemplate
+      POSTGRES_DB: usertemplate 
+    volumes:
+      - ./devdbtemplate:/var/lib/postgresql/data
+    network_mode: "host"
+  redis:
+    image: redis:alpine
+    container_name: redis-user-template
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdbtemplate:/data
+volumes:
+  redisdbtemplate:
+  debdbtemplate:
+
