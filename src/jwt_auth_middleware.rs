@@ -5,7 +5,6 @@ use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized};
 use actix_web::{dev::Payload, Error as ActixWebError};
 use actix_web::{http, web, FromRequest, HttpRequest};
 use futures::executor::block_on;
-use redis::Commands;
 use serde::{Deserialize, Serialize};
 
 use crate::repository::models::User;
@@ -67,35 +66,8 @@ impl FromRequest for JwtMiddleware {
             }
         };
 
-        let access_token_uuid =
-            uuid::Uuid::parse_str(&access_token_details.token_uuid.to_string()).unwrap();
-
-        let user_id_redis_result = async move {
-            let mut redis_client = match data.redis_client.get_connection() {
-                Ok(redis_client) => redis_client,
-                Err(e) => {
-                    log::error!("Error while getting redis connection: {:?}", e);
-                    return Err(ErrorInternalServerError(ErrorResponse {
-                        status: "error".to_string(),
-                        message: "Internal server error".to_string(),
-                    }));
-                }
-            };
-
-            let redis_result = redis_client.get::<_, String>(access_token_uuid.clone().to_string());
-
-            match redis_result {
-                Ok(value) => Ok(value),
-                Err(_) => Err(ErrorUnauthorized(ErrorResponse {
-                    status: "fail".to_string(),
-                    message: "Token is invalid or session has expired".to_string(),
-                })),
-            }
-        };
-
         let user_exists_result = async move {
-            let user_id = user_id_redis_result.await?;
-            let user_id_uuid = uuid::Uuid::parse_str(user_id.as_str()).unwrap();
+            let user_id_uuid = access_token_details.user_id;
 
             let query_result =
                 sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", user_id_uuid)
@@ -123,7 +95,7 @@ impl FromRequest for JwtMiddleware {
 
         match block_on(user_exists_result) {
             Ok(user) => ready(Ok(JwtMiddleware {
-                access_token_uuid,
+                access_token_uuid: access_token_details.token_uuid,
                 user,
             })),
             Err(error) => ready(Err(error)),

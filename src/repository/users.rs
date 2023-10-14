@@ -217,25 +217,3 @@ pub async fn get_user_by_reset_token(
     .fetch_one(conn)
     .await
 }
-
-pub async fn save_token_in_redis(
-    mut redis_client: redis::aio::Connection,
-    access_token_details: &crate::token::TokenDetails,
-    user: User,
-    data: &web::Data<AppState>,
-) -> Result<(), HttpResponse> {
-    let redis_result: redis::RedisResult<()> = redis_client
-        .set_ex(
-            access_token_details.token_uuid.to_string(),
-            user.id.to_string(),
-            (data.env.access_token_max_age * 60) as usize,
-        )
-        .await;
-
-    if redis_result.is_err() {
-        return Err(HttpResponse::UnprocessableEntity().json(
-            serde_json::json!({"status": "error", "message": format_args!("{:?}", redis_result.unwrap_err())}),
-        ));
-    }
-    Ok(())
-}

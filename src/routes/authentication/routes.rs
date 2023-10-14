@@ -211,12 +211,6 @@ pub async fn refresh_access_token_handler(
         }
     };
 
-    if let Err(_failed_error) =
-        users::save_token_in_redis(redis_client, &access_token_details, user, &data).await
-    {
-        return Err(CustomError::InternalError);
-    }
-
     let access_cookie = Cookie::build("access_token", access_token_details.token.clone().unwrap())
         .path("/")
         .max_age(ActixWebDuration::new(data.env.access_token_max_age * 60, 0))
