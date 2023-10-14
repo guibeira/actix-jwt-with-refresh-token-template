@@ -10,7 +10,7 @@ Make sure you have Rust and Docker Compose installed on your system.
 
 Navigate to the project directory.
 ```bash
-cd user-template-actix
+cd actix-jwt-with-refresh-token-template
 ```
 Create the .env file.
 ```bash
